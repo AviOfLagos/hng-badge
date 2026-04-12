@@ -217,21 +217,20 @@ function drawBadge(
   }
   ctx.restore();
 
-  // ── 8. Role text ──
-  const rolePhrase =
-    data.role === "intern" ? "I AM AN INTERN AT HNG" : "I AM A MENTOR AT HNG";
-  const textStartY = photoCY + photoR + 80;
+  // ── 8. Role label ──
+  const roleLabel = data.role === "intern" ? "Intern" : "Mentor";
+  const textStartY = photoCY + photoR + 60;
 
-  ctx.font = `600 ${S * 0.034}px Arial, sans-serif`;
+  ctx.font = `600 ${S * 0.032}px Arial, sans-serif`;
   ctx.textAlign = "center";
-  ctx.letterSpacing = "3px";
+  ctx.letterSpacing = "4px";
 
-  // gradient text for role phrase
-  const rg = ctx.createLinearGradient(S * 0.25, 0, S * 0.75, 0);
+  // gradient text for role label
+  const rg = ctx.createLinearGradient(S * 0.35, 0, S * 0.65, 0);
   rg.addColorStop(0, "#00AEFF");
   rg.addColorStop(1, "#a78bfa");
   ctx.fillStyle = rg;
-  ctx.fillText(rolePhrase, S / 2, textStartY);
+  ctx.fillText(roleLabel.toUpperCase(), S / 2, textStartY);
   ctx.letterSpacing = "0px";
 
   // ── 9. Name ──
@@ -241,7 +240,7 @@ function drawBadge(
 
   const nameLines = wrapText(ctx, nameDisplay, S - 160);
   const nameLineH = S * 0.088;
-  const nameStartY = textStartY + S * 0.1;
+  const nameStartY = textStartY + S * 0.09;
   nameLines.forEach((line, i) => {
     ctx.fillText(line, S / 2, nameStartY + i * nameLineH);
   });
