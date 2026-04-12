@@ -219,8 +219,8 @@ function drawBadge(
 
   // ── 8. Role text ──
   const rolePhrase =
-    data.role === "intern" ? "I AM INTERNING AT HNG" : "I AM MENTORING AT HNG";
-  const textStartY = photoCY + photoR + 54;
+    data.role === "intern" ? "I AM AN INTERN AT HNG" : "I AM A MENTOR AT HNG";
+  const textStartY = photoCY + photoR + 80;
 
   ctx.font = `600 ${S * 0.034}px Arial, sans-serif`;
   ctx.textAlign = "center";
