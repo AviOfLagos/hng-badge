@@ -219,7 +219,7 @@ function drawBadge(
 
   // ── 8. Role label ──
   const roleLabel = data.role === "intern" ? "Intern" : "Mentor";
-  const textStartY = photoCY + photoR + 60;
+  const textStartY = photoCY + photoR + 100;
 
   ctx.font = `600 ${S * 0.032}px Arial, sans-serif`;
   ctx.textAlign = "center";
