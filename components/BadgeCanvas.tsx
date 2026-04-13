@@ -248,13 +248,13 @@ function drawBadge(
   // ── 10. Track pill ──
   const trackLabel = (data.track.trim() || "").toUpperCase();
   if (trackLabel) {
-    ctx.font = `600 ${S * 0.028}px Arial, sans-serif`;
-    const pillW = ctx.measureText(trackLabel).width + 70;
-    const pillH = S * 0.058;
+    ctx.font = `600 ${S * 0.034}px Arial, sans-serif`;
+    const pillW = ctx.measureText(trackLabel).width + 90;
+    const pillH = S * 0.072;
     const pillX = S / 2 - pillW / 2;
     // Clamp so pill never overlaps the watermark at the bottom
     const pillY = Math.min(
-      nameStartY + nameLines.length * nameLineH + 14,
+      nameStartY + nameLines.length * nameLineH - 40,
       S - pillH - 80
     );
 
