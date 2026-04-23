@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import {
+  S, STYLE_CONFIG, HNG_LOGO_SVG,
+  drawRoundedRect, drawCornerBrackets, drawDotGrid, drawBackground, wrapText,
+} from "@/lib/badge-helpers";
 
 export type BadgeRole = "intern" | "mentor";
 export type BadgeStyle = "default" | "bg1" | "bg2" | "bg3" | "bg4" | "bg5" | "bg6";
@@ -14,103 +18,8 @@ export interface BadgeData {
   overlayEnabled: boolean;
 }
 
-const STYLE_CONFIG: Record<string, { src: string; overlay: number }> = {
-  bg1: { src: "/bg/HNG-BG-01.jpg", overlay: 0.62 },
-  bg2: { src: "/bg/HNG-BG-02.jpg", overlay: 0.42 },
-  bg3: { src: "/bg/HNG-BG-03.jpg", overlay: 0.52 },
-  bg4: { src: "/bg/HNG-BG-04.jpg", overlay: 0.42 },
-  bg5: { src: "/bg/HNG-BG-05.jpg", overlay: 0.52 },
-  bg6: { src: "/bg/HNG-BG-06.jpg", overlay: 0.42 },
-};
-
 export interface BadgeCanvasRef {
   toDataURL: () => string;
-}
-
-const S = 1080; // canvas size
-
-// HNG logo SVG as data URI (cyan brackets + white HNG text — optimised for dark bg)
-const HNG_LOGO_SVG = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 78.36 24">
-  <path fill="#00aeff" fill-rule="evenodd" d="M9,0H0V24H9V19.78H5.35V4.18H9Z"/>
-  <path fill="#00aeff" fill-rule="evenodd" d="M15,0h9V24H15V19.78h3.65V4.18H15Z"/>
-  <polygon fill="white" points="43.08 5 45.5 5 45.5 19 43.08 19 43.08 12.66 36.06 12.66 36.06 19 33.64 19 33.64 5 36.06 5 36.06 10.62 43.08 10.62 43.08 5"/>
-  <polygon fill="white" points="58.86 5 61.28 5 61.28 19 57.92 19 52 7.64 52 19 49.58 19 49.58 5 53.1 5 58.86 16.04 58.86 5"/>
-  <path fill="white" d="M78.36,11.62v2H75.8a2.27,2.27,0,0,1,1.26,2.08c0,2-2.12,3.54-5.28,3.54-4.32,0-7.14-2.92-7.14-7.32s2.7-7.24,7-7.24c3.4,0,5.8,1.82,5.5,5.18H74.66c.24-2.06-1.12-3.06-3-3.06-2.76,0-4.48,2-4.48,5.12s1.8,5.2,4.6,5.2c1.66,0,2.82-.7,2.82-1.8s-1.08-1.7-3-1.7v-2Z"/>
-</svg>`)}`;
-
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
-function drawRoundedRect(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number, r: number
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.arcTo(x + w, y, x + w, y + r, r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-  ctx.lineTo(x + r, y + h);
-  ctx.arcTo(x, y + h, x, y + h - r, r);
-  ctx.lineTo(x, y + r);
-  ctx.arcTo(x, y, x + r, y, r);
-  ctx.closePath();
-}
-
-/** Draw L-shaped corner brackets */
-function drawCornerBrackets(ctx: CanvasRenderingContext2D, lightMode = false) {
-  const m = 48; // margin from edge
-  const len = 40; // arm length
-  const t = 3; // line thickness
-  ctx.fillStyle = lightMode ? "rgba(0, 80, 140, 0.35)" : "rgba(0, 174, 255, 0.25)";
-  // top-left
-  ctx.fillRect(m, m, len, t);
-  ctx.fillRect(m, m, t, len);
-  // top-right
-  ctx.fillRect(S - m - len, m, len, t);
-  ctx.fillRect(S - m - t, m, t, len);
-  // bottom-left
-  ctx.fillRect(m, S - m - t, len, t);
-  ctx.fillRect(m, S - m - len, t, len);
-  // bottom-right
-  ctx.fillRect(S - m - len, S - m - t, len, t);
-  ctx.fillRect(S - m - t, S - m - len, t, len);
-}
-
-/** Subtle dot-grid texture */
-function drawDotGrid(ctx: CanvasRenderingContext2D) {
-  const step = 48;
-  const r = 1.5;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.045)";
-  for (let x = step; x < S; x += step) {
-    for (let y = step; y < S; y += step) {
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-/** Wrap text and return lines */
-function wrapText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number
-): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = test;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
 }
 
 // ─── main draw ────────────────────────────────────────────────────────────────
@@ -122,56 +31,18 @@ function drawBadge(
   logoImg: HTMLImageElement,
   bgImg: HTMLImageElement | null
 ) {
-  // Determine if we're on a light (no overlay) background image
-  const hasBgImage = bgImg && data.style !== "default";
-  const lightMode = !!(hasBgImage && !data.overlayEnabled);
+  const lightMode = drawBackground(ctx, data.style, data.overlayEnabled, bgImg);
 
-  // ── 1. Background ──
-  if (hasBgImage) {
-    // Draw background image scaled to cover the canvas
-    const scale = Math.max(S / bgImg.naturalWidth, S / bgImg.naturalHeight);
-    const w = bgImg.naturalWidth * scale;
-    const h = bgImg.naturalHeight * scale;
-    ctx.drawImage(bgImg, (S - w) / 2, (S - h) / 2, w, h);
-
-    // Dark overlay for text readability (only if enabled)
-    if (data.overlayEnabled) {
-      const opacity = STYLE_CONFIG[data.style]?.overlay ?? 0.5;
-      ctx.fillStyle = `rgba(3, 7, 18, ${opacity})`;
-      ctx.fillRect(0, 0, S, S);
-    }
-  } else {
-    ctx.fillStyle = "#070A14";
-    ctx.fillRect(0, 0, S, S);
-
-    // Radial glow – blue top-right
-    const g1 = ctx.createRadialGradient(S * 0.85, S * 0.08, 0, S * 0.85, S * 0.08, S * 0.65);
-    g1.addColorStop(0, "rgba(0,174,255,0.13)");
-    g1.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = g1;
-    ctx.fillRect(0, 0, S, S);
-
-    // Radial glow – purple bottom-left
-    const g2 = ctx.createRadialGradient(S * 0.12, S * 0.9, 0, S * 0.12, S * 0.9, S * 0.5);
-    g2.addColorStop(0, "rgba(123,47,255,0.12)");
-    g2.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = g2;
-    ctx.fillRect(0, 0, S, S);
-
-    // Dot grid only for default style
-    drawDotGrid(ctx);
-  }
-
-  // ── 3. Outer border ──
+  // ── Outer border ──
   drawRoundedRect(ctx, 24, 24, S - 48, S - 48, 32);
   ctx.strokeStyle = lightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.07)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // ── 4. Corner brackets ──
+  // ── Corner brackets ──
   drawCornerBrackets(ctx, lightMode);
 
-  // ── 5. HNG Logo (top center) ──
+  // ── HNG Logo (top center) ──
   const logoW = 260;
   const logoH = logoW * (24 / 78.36);
   const logoX = (S - logoW) / 2;
@@ -192,7 +63,7 @@ function drawBadge(
   ctx.fillText("INTERNSHIP", S / 2, logoY + logoH + 34);
   ctx.letterSpacing = "0px";
 
-  // ── 6. Separator line ──
+  // ── Separator line ──
   const sepY = logoY + logoH + 64;
   const sepGrad = ctx.createLinearGradient(120, 0, S - 120, 0);
   sepGrad.addColorStop(0, lightMode ? "rgba(0,80,140,0)" : "rgba(0,174,255,0)");
@@ -205,10 +76,10 @@ function drawBadge(
   ctx.lineTo(S - 120, sepY);
   ctx.stroke();
 
-  // ── 7. Photo circle ──
+  // ── Photo circle ──
   const photoCX = S / 2;
-  const photoR = S * 0.168;          // slightly smaller → more room for text below
-  const photoCY = sepY + 48 + photoR; // tighter gap after separator
+  const photoR = S * 0.168;
+  const photoCY = sepY + 48 + photoR;
 
   // Outer glow ring
   const ringR = photoR + 24;
@@ -221,7 +92,7 @@ function drawBadge(
   ctx.lineWidth = 4;
   ctx.stroke();
 
-  // Inner ring gap (dark separator)
+  // Inner ring gap
   ctx.beginPath();
   ctx.arc(photoCX, photoCY, photoR + 8, 0, Math.PI * 2);
   ctx.strokeStyle = "#070A14";
@@ -240,22 +111,19 @@ function drawBadge(
     const sy = (photoImg.naturalHeight - size) / 2;
     ctx.drawImage(photoImg, sx, sy, size, size, photoCX - photoR, photoCY - photoR, photoR * 2, photoR * 2);
   } else {
-    // placeholder
     ctx.fillStyle = "#111827";
     ctx.fillRect(photoCX - photoR, photoCY - photoR, photoR * 2, photoR * 2);
-    // head
     ctx.fillStyle = "#2d3748";
     ctx.beginPath();
     ctx.arc(photoCX, photoCY - photoR * 0.12, photoR * 0.38, 0, Math.PI * 2);
     ctx.fill();
-    // body
     ctx.beginPath();
     ctx.arc(photoCX, photoCY + photoR * 0.72, photoR * 0.58, Math.PI, 0);
     ctx.fill();
   }
   ctx.restore();
 
-  // ── 8. Role tagline ──
+  // ── Role tagline ──
   const roleTagline = data.role === "intern" ? "I am interning at HNG" : "I am mentoring at HNG";
   const textStartY = photoCY + photoR + 100;
 
@@ -263,7 +131,6 @@ function drawBadge(
   ctx.textAlign = "center";
   ctx.letterSpacing = "2px";
 
-  // gradient text for role tagline
   if (lightMode) {
     ctx.fillStyle = "#005090";
   } else {
@@ -275,7 +142,7 @@ function drawBadge(
   ctx.fillText(roleTagline.toUpperCase(), S / 2, textStartY);
   ctx.letterSpacing = "0px";
 
-  // ── 9. Name ──
+  // ── Name ──
   const nameDisplay = data.name.trim() || "Your Name";
   ctx.font = `bold ${S * 0.078}px Arial, sans-serif`;
   ctx.fillStyle = lightMode ? "#1a1a2e" : "#FFFFFF";
@@ -287,7 +154,7 @@ function drawBadge(
     ctx.fillText(line, S / 2, nameStartY + i * nameLineH);
   });
 
-  // ── 10. Track pill ──
+  // ── Track pill ──
   const trackLabel = (data.track.trim() || "").toUpperCase();
   if (trackLabel) {
     ctx.font = `600 ${S * 0.034}px Arial, sans-serif`;
@@ -299,7 +166,6 @@ function drawBadge(
       S - pillH - 80
     );
 
-    // glassmorphism fill
     drawRoundedRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
     ctx.fillStyle = lightMode ? "rgba(0,80,140,0.12)" : "rgba(0,174,255,0.1)";
     ctx.fill();
@@ -315,7 +181,7 @@ function drawBadge(
     ctx.letterSpacing = "0px";
   }
 
-  // ── 11. Bottom watermark ──
+  // ── Bottom watermark ──
   ctx.font = `${S * 0.022}px Arial, sans-serif`;
   ctx.fillStyle = lightMode ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.2)";
   ctx.textAlign = "center";
@@ -340,7 +206,7 @@ const BadgeCanvas = forwardRef<BadgeCanvasRef, { data: BadgeData }>(
 
       const styleConfig = data.style !== "default" ? STYLE_CONFIG[data.style] : null;
       const loaded: { logo?: HTMLImageElement; photo?: HTMLImageElement; bg?: HTMLImageElement } = {};
-      let remaining = 1; // logo always needed
+      let remaining = 1;
       if (styleConfig) remaining++;
       if (data.photoDataUrl) remaining++;
 
