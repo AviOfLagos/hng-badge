@@ -3,8 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import type { BadgeCanvasRef, BadgeStyle } from "@/components/BadgeCanvas";
-import type { ProgressBadgeData } from "@/components/ProgressBadgeCanvas";
-import { drawProgressBadge } from "@/components/ProgressBadgeCanvas";
+import type { ProgressBadgeData, TextColorId } from "@/components/ProgressBadgeCanvas";
+import { drawProgressBadge, TEXT_COLORS } from "@/components/ProgressBadgeCanvas";
 import { loadProfile } from "@/lib/storage";
 import { STYLE_CONFIG, HNG_LOGO_SVG, loadImage } from "@/lib/badge-helpers";
 import { encodeGif } from "@/lib/gif-encoder";
@@ -30,6 +30,8 @@ export default function ProgressBadgeTab() {
   const [gifPreviewUrl, setGifPreviewUrl] = useState<string | null>(null);
   const [style, setStyle] = useState<BadgeStyle>("default");
   const [overlayEnabled, setOverlayEnabled] = useState(true);
+  const [textColor, setTextColor] = useState<TextColorId>("white");
+  const [textSize, setTextSize] = useState(60); // 0–100
 
   const profile = typeof window !== "undefined" ? loadProfile() : null;
   const canvasRef = useRef<BadgeCanvasRef>(null);
@@ -60,7 +62,7 @@ export default function ProgressBadgeTab() {
       gifBlobRef.current = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [updateText, style, overlayEnabled]);
+  }, [updateText, style, overlayEnabled, textColor, textSize]);
 
   const dayNumber = getDayNumber();
 
@@ -73,6 +75,8 @@ export default function ProgressBadgeTab() {
     photoDataUrl: profile?.photoDataUrl ?? null,
     style,
     overlayEnabled,
+    textColor,
+    textSize,
   };
 
   // Generate GIF for preview
@@ -219,6 +223,48 @@ export default function ProgressBadgeTab() {
           />
           <div className="text-right text-xs text-gray-600 mt-1">
             {updateText.length}/280
+          </div>
+        </div>
+
+        {/* Text color */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Text Color
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            {TEXT_COLORS.map((c) => (
+              <button
+                type="button"
+                key={c.id}
+                onClick={() => setTextColor(c.id)}
+                title={c.label}
+                className={`w-7 h-7 rounded-full border-2 transition-all ${
+                  textColor === c.id
+                    ? "border-[#00AEFF] scale-110"
+                    : "border-gray-600 hover:border-gray-400"
+                }`}
+                style={{ backgroundColor: c.value }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Text size */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Text Size
+          </label>
+          <div className="flex items-center gap-3">
+            <span className="text-gray-500 text-xs">A</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={textSize}
+              onChange={(e) => setTextSize(Number(e.target.value))}
+              className="flex-1 h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-[#00AEFF]"
+            />
+            <span className="text-gray-500 text-sm font-bold">A</span>
           </div>
         </div>
 

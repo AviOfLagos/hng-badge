@@ -9,6 +9,21 @@ import {
 
 export const CURRENT_STAGE = 2;
 
+export const TEXT_COLORS = [
+  { id: "white", value: "#FFFFFF", label: "White" },
+  { id: "cyan", value: "#00AEFF", label: "Cyan" },
+  { id: "lime", value: "#84CC16", label: "Lime" },
+  { id: "amber", value: "#F59E0B", label: "Amber" },
+  { id: "rose", value: "#F43F5E", label: "Rose" },
+  { id: "violet", value: "#8B5CF6", label: "Violet" },
+  { id: "emerald", value: "#10B981", label: "Emerald" },
+  { id: "orange", value: "#F97316", label: "Orange" },
+  { id: "pink", value: "#EC4899", label: "Pink" },
+  { id: "sky", value: "#38BDF8", label: "Sky" },
+] as const;
+
+export type TextColorId = (typeof TEXT_COLORS)[number]["id"];
+
 export interface ProgressBadgeData {
   updateText: string;
   dayNumber: number;
@@ -18,6 +33,8 @@ export interface ProgressBadgeData {
   photoDataUrl: string | null;
   style: BadgeStyle;
   overlayEnabled: boolean;
+  textColor: TextColorId;
+  textSize: number; // 0–100 slider, maps to font multiplier
 }
 
 // ─── draw function (exported for GIF encoder) ────────────────────────────────
@@ -121,11 +138,13 @@ export function drawProgressBadge(
 
     const heroY = sepY + 76;
 
-    // Progressive font sizing
-    let fontSize = S * 0.055;
+    // Font size: slider 0–100 maps to 0.035–0.075 of S
+    const sizeMultiplier = 0.035 + (data.textSize / 100) * 0.040;
+    let fontSize = S * sizeMultiplier;
     ctx.font = `bold ${fontSize}px Arial, sans-serif`;
     let lines = wrapText(ctx, updateDisplay, maxW);
-    while (lines.length > 5 && fontSize > S * 0.030) {
+    // Auto-shrink if too many lines even at chosen size
+    while (lines.length > 7 && fontSize > S * 0.028) {
       fontSize -= 2;
       ctx.font = `bold ${fontSize}px Arial, sans-serif`;
       lines = wrapText(ctx, updateDisplay, maxW);
@@ -138,7 +157,10 @@ export function drawProgressBadge(
     ctx.font = `bold ${fontSize}px Arial, sans-serif`;
     const visibleLines = wrapText(ctx, visibleText, maxW);
 
-    ctx.fillStyle = lightMode ? "#1a1a2e" : "#FFFFFF";
+    // Text color from palette
+    const colorEntry = TEXT_COLORS.find((c) => c.id === data.textColor);
+    const resolvedColor = colorEntry?.value ?? "#FFFFFF";
+    ctx.fillStyle = lightMode ? "#1a1a2e" : resolvedColor;
     ctx.textAlign = "left";
     const lineH = fontSize * 1.35;
     visibleLines.forEach((line, i) => {
