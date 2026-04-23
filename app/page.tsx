@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, ChangeEvent } from "react";
 import dynamic from "next/dynamic";
-import type { BadgeCanvasRef, BadgeData, BadgeRole } from "@/components/BadgeCanvas";
+import type { BadgeCanvasRef, BadgeData, BadgeRole, BadgeStyle } from "@/components/BadgeCanvas";
 import SharePanel from "@/components/SharePanel";
 
 const BadgeCanvas = dynamic(() => import("@/components/BadgeCanvas"), { ssr: false });
@@ -27,6 +27,8 @@ export default function Home() {
   const [track, setTrack] = useState("");
   const [customTrack, setCustomTrack] = useState("");
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [style, setStyle] = useState<BadgeStyle>("default");
+  const [overlayEnabled, setOverlayEnabled] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
   const canvasRef = useRef<BadgeCanvasRef>(null);
@@ -36,6 +38,8 @@ export default function Home() {
     role,
     track: track === "Other" ? customTrack : track,
     photoDataUrl,
+    style,
+    overlayEnabled,
   };
 
   const handlePhoto = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -62,8 +66,8 @@ export default function Home() {
     <main className="min-h-screen flex flex-col items-center py-10 px-4">
       {/* Header */}
       <div className="text-center mb-8">
-        <span className="text-orange-500 font-bold text-2xl tracking-tight">HNG</span>
-        <span className="text-white font-light text-2xl"> Badge Generator</span>
+        <span className="text-[#00AEFF]  font-bold text-3xl tracking-tight">HNG</span>
+        <span className="text-white font-light text-3xl"> Badge Generator</span>
         <p className="text-gray-400 text-sm mt-1">Create your badge and share it on socials</p>
       </div>
 
@@ -73,20 +77,20 @@ export default function Home() {
           {/* Role toggle */}
           <div>
             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-              I am a...
+              I am...
             </label>
             <div className="flex rounded-xl overflow-hidden border border-gray-700">
               {(["intern", "mentor"] as BadgeRole[]).map((r) => (
                 <button
                   key={r}
                   onClick={() => setRole(r)}
-                  className={`flex-1 py-2.5 text-sm font-semibold capitalize transition-colors ${
+                  className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
                     role === r
                       ? "bg-[#00AEFF] text-white"
                       : "bg-gray-800 text-gray-400 hover:text-white"
                   }`}
                 >
-                  {r === "intern" ? "Intern" : "Mentor"}
+                  {r === "intern" ? "Interning" : "Mentoring"}
                 </button>
               ))}
             </div>
@@ -187,6 +191,60 @@ export default function Home() {
           <div className="w-full max-w-sm lg:max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl shadow-orange-900/20 border border-gray-800">
             <BadgeCanvas ref={canvasRef} data={badgeData} />
           </div>
+
+          {/* Background style selector */}
+          <div className="flex gap-2 flex-wrap justify-center mt-4">
+            <button
+              onClick={() => setStyle("default")}
+              className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-colors ${
+                style === "default" ? "border-[#00AEFF]" : "border-gray-700 hover:border-gray-500"
+              }`}
+            >
+              <div className="w-full h-full bg-gradient-to-br from-[#070A14] via-[#0a1628] to-[#0d1117]" />
+            </button>
+            {([1, 2, 3, 4, 5, 6] as const).map((n) => {
+              const key = `bg${n}` as BadgeStyle;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setStyle(key)}
+                  className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-colors ${
+                    style === key ? "border-[#00AEFF]" : "border-gray-700 hover:border-gray-500"
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/bg/HNG-BG-0${n}.jpg`}
+                    alt={`Style ${n}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Overlay toggle — only relevant when a background image is selected */}
+          {style !== "default" && (
+            <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={overlayEnabled}
+                onClick={() => setOverlayEnabled((v) => !v)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${
+                  overlayEnabled ? "bg-[#00AEFF]" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                    overlayEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <span className="text-sm text-gray-400">Dark overlay</span>
+            </label>
+          )}
+
           <p className="text-gray-600 text-xs mt-3">Live preview — updates as you type</p>
         </div>
       </div>

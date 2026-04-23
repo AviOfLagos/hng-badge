@@ -3,13 +3,25 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 
 export type BadgeRole = "intern" | "mentor";
+export type BadgeStyle = "default" | "bg1" | "bg2" | "bg3" | "bg4" | "bg5" | "bg6";
 
 export interface BadgeData {
   name: string;
   role: BadgeRole;
   track: string;
   photoDataUrl: string | null;
+  style: BadgeStyle;
+  overlayEnabled: boolean;
 }
+
+const STYLE_CONFIG: Record<string, { src: string; overlay: number }> = {
+  bg1: { src: "/bg/HNG-BG-01.jpg", overlay: 0.62 },
+  bg2: { src: "/bg/HNG-BG-02.jpg", overlay: 0.42 },
+  bg3: { src: "/bg/HNG-BG-03.jpg", overlay: 0.52 },
+  bg4: { src: "/bg/HNG-BG-04.jpg", overlay: 0.42 },
+  bg5: { src: "/bg/HNG-BG-05.jpg", overlay: 0.52 },
+  bg6: { src: "/bg/HNG-BG-06.jpg", overlay: 0.42 },
+};
 
 export interface BadgeCanvasRef {
   toDataURL: () => string;
@@ -46,11 +58,11 @@ function drawRoundedRect(
 }
 
 /** Draw L-shaped corner brackets */
-function drawCornerBrackets(ctx: CanvasRenderingContext2D) {
+function drawCornerBrackets(ctx: CanvasRenderingContext2D, lightMode = false) {
   const m = 48; // margin from edge
   const len = 40; // arm length
   const t = 3; // line thickness
-  ctx.fillStyle = "rgba(0, 174, 255, 0.25)";
+  ctx.fillStyle = lightMode ? "rgba(0, 80, 140, 0.35)" : "rgba(0, 174, 255, 0.25)";
   // top-left
   ctx.fillRect(m, m, len, t);
   ctx.fillRect(m, m, t, len);
@@ -107,48 +119,74 @@ function drawBadge(
   ctx: CanvasRenderingContext2D,
   data: BadgeData,
   photoImg: HTMLImageElement | null,
-  logoImg: HTMLImageElement
+  logoImg: HTMLImageElement,
+  bgImg: HTMLImageElement | null
 ) {
+  // Determine if we're on a light (no overlay) background image
+  const hasBgImage = bgImg && data.style !== "default";
+  const lightMode = !!(hasBgImage && !data.overlayEnabled);
+
   // ── 1. Background ──
-  ctx.fillStyle = "#070A14";
-  ctx.fillRect(0, 0, S, S);
+  if (hasBgImage) {
+    // Draw background image scaled to cover the canvas
+    const scale = Math.max(S / bgImg.naturalWidth, S / bgImg.naturalHeight);
+    const w = bgImg.naturalWidth * scale;
+    const h = bgImg.naturalHeight * scale;
+    ctx.drawImage(bgImg, (S - w) / 2, (S - h) / 2, w, h);
 
-  // Radial glow – blue top-right
-  const g1 = ctx.createRadialGradient(S * 0.85, S * 0.08, 0, S * 0.85, S * 0.08, S * 0.65);
-  g1.addColorStop(0, "rgba(0,174,255,0.13)");
-  g1.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = g1;
-  ctx.fillRect(0, 0, S, S);
+    // Dark overlay for text readability (only if enabled)
+    if (data.overlayEnabled) {
+      const opacity = STYLE_CONFIG[data.style]?.overlay ?? 0.5;
+      ctx.fillStyle = `rgba(3, 7, 18, ${opacity})`;
+      ctx.fillRect(0, 0, S, S);
+    }
+  } else {
+    ctx.fillStyle = "#070A14";
+    ctx.fillRect(0, 0, S, S);
 
-  // Radial glow – purple bottom-left
-  const g2 = ctx.createRadialGradient(S * 0.12, S * 0.9, 0, S * 0.12, S * 0.9, S * 0.5);
-  g2.addColorStop(0, "rgba(123,47,255,0.12)");
-  g2.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = g2;
-  ctx.fillRect(0, 0, S, S);
+    // Radial glow – blue top-right
+    const g1 = ctx.createRadialGradient(S * 0.85, S * 0.08, 0, S * 0.85, S * 0.08, S * 0.65);
+    g1.addColorStop(0, "rgba(0,174,255,0.13)");
+    g1.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, S, S);
 
-  // ── 2. Dot grid ──
-  drawDotGrid(ctx);
+    // Radial glow – purple bottom-left
+    const g2 = ctx.createRadialGradient(S * 0.12, S * 0.9, 0, S * 0.12, S * 0.9, S * 0.5);
+    g2.addColorStop(0, "rgba(123,47,255,0.12)");
+    g2.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, S, S);
+
+    // Dot grid only for default style
+    drawDotGrid(ctx);
+  }
 
   // ── 3. Outer border ──
   drawRoundedRect(ctx, 24, 24, S - 48, S - 48, 32);
-  ctx.strokeStyle = "rgba(255,255,255,0.07)";
+  ctx.strokeStyle = lightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.07)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   // ── 4. Corner brackets ──
-  drawCornerBrackets(ctx);
+  drawCornerBrackets(ctx, lightMode);
 
   // ── 5. HNG Logo (top center) ──
   const logoW = 260;
   const logoH = logoW * (24 / 78.36);
   const logoX = (S - logoW) / 2;
   const logoY = 90;
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 174, 255, 0.45)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 4;
   ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+  ctx.restore();
 
   // "INTERNSHIP" label under logo
   ctx.font = `500 ${S * 0.022}px Arial, sans-serif`;
-  ctx.fillStyle = "rgba(0,174,255,0.7)";
+  ctx.fillStyle = lightMode ? "rgba(0,80,140,0.85)" : "rgba(0,174,255,0.7)";
   ctx.textAlign = "center";
   ctx.letterSpacing = "6px";
   ctx.fillText("INTERNSHIP", S / 2, logoY + logoH + 34);
@@ -157,9 +195,9 @@ function drawBadge(
   // ── 6. Separator line ──
   const sepY = logoY + logoH + 64;
   const sepGrad = ctx.createLinearGradient(120, 0, S - 120, 0);
-  sepGrad.addColorStop(0, "rgba(0,174,255,0)");
-  sepGrad.addColorStop(0.5, "rgba(0,174,255,0.35)");
-  sepGrad.addColorStop(1, "rgba(0,174,255,0)");
+  sepGrad.addColorStop(0, lightMode ? "rgba(0,80,140,0)" : "rgba(0,174,255,0)");
+  sepGrad.addColorStop(0.5, lightMode ? "rgba(0,80,140,0.4)" : "rgba(0,174,255,0.35)");
+  sepGrad.addColorStop(1, lightMode ? "rgba(0,80,140,0)" : "rgba(0,174,255,0)");
   ctx.strokeStyle = sepGrad;
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -217,26 +255,30 @@ function drawBadge(
   }
   ctx.restore();
 
-  // ── 8. Role label ──
-  const roleLabel = data.role === "intern" ? "Intern" : "Mentor";
+  // ── 8. Role tagline ──
+  const roleTagline = data.role === "intern" ? "I am interning at HNG" : "I am mentoring at HNG";
   const textStartY = photoCY + photoR + 100;
 
-  ctx.font = `600 ${S * 0.032}px Arial, sans-serif`;
+  ctx.font = `600 ${S * 0.030}px Arial, sans-serif`;
   ctx.textAlign = "center";
-  ctx.letterSpacing = "4px";
+  ctx.letterSpacing = "2px";
 
-  // gradient text for role label
-  const rg = ctx.createLinearGradient(S * 0.35, 0, S * 0.65, 0);
-  rg.addColorStop(0, "#00AEFF");
-  rg.addColorStop(1, "#a78bfa");
-  ctx.fillStyle = rg;
-  ctx.fillText(roleLabel.toUpperCase(), S / 2, textStartY);
+  // gradient text for role tagline
+  if (lightMode) {
+    ctx.fillStyle = "#005090";
+  } else {
+    const rg = ctx.createLinearGradient(S * 0.25, 0, S * 0.75, 0);
+    rg.addColorStop(0, "#00AEFF");
+    rg.addColorStop(1, "#a78bfa");
+    ctx.fillStyle = rg;
+  }
+  ctx.fillText(roleTagline.toUpperCase(), S / 2, textStartY);
   ctx.letterSpacing = "0px";
 
   // ── 9. Name ──
   const nameDisplay = data.name.trim() || "Your Name";
   ctx.font = `bold ${S * 0.078}px Arial, sans-serif`;
-  ctx.fillStyle = "#FFFFFF";
+  ctx.fillStyle = lightMode ? "#1a1a2e" : "#FFFFFF";
 
   const nameLines = wrapText(ctx, nameDisplay, S - 160);
   const nameLineH = S * 0.088;
@@ -252,7 +294,6 @@ function drawBadge(
     const pillW = ctx.measureText(trackLabel).width + 90;
     const pillH = S * 0.072;
     const pillX = S / 2 - pillW / 2;
-    // Clamp so pill never overlaps the watermark at the bottom
     const pillY = Math.min(
       nameStartY + nameLines.length * nameLineH - 40,
       S - pillH - 80
@@ -260,14 +301,14 @@ function drawBadge(
 
     // glassmorphism fill
     drawRoundedRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
-    ctx.fillStyle = "rgba(0,174,255,0.1)";
+    ctx.fillStyle = lightMode ? "rgba(0,80,140,0.12)" : "rgba(0,174,255,0.1)";
     ctx.fill();
     drawRoundedRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
-    ctx.strokeStyle = "rgba(0,174,255,0.45)";
+    ctx.strokeStyle = lightMode ? "rgba(0,80,140,0.5)" : "rgba(0,174,255,0.45)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    ctx.fillStyle = "#00AEFF";
+    ctx.fillStyle = lightMode ? "#005090" : "#00AEFF";
     ctx.textAlign = "center";
     ctx.letterSpacing = "2px";
     ctx.fillText(trackLabel, S / 2, pillY + pillH * 0.66);
@@ -276,7 +317,7 @@ function drawBadge(
 
   // ── 11. Bottom watermark ──
   ctx.font = `${S * 0.022}px Arial, sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.fillStyle = lightMode ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.2)";
   ctx.textAlign = "center";
   ctx.fillText("hng.tech", S / 2, S - 52);
 }
@@ -297,17 +338,34 @@ const BadgeCanvas = forwardRef<BadgeCanvasRef, { data: BadgeData }>(
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      const logoImg = new Image();
-      logoImg.onload = () => {
-        if (data.photoDataUrl) {
-          const photoImg = new Image();
-          photoImg.onload = () => drawBadge(ctx, data, photoImg, logoImg);
-          photoImg.src = data.photoDataUrl;
-        } else {
-          drawBadge(ctx, data, null, logoImg);
+      const styleConfig = data.style !== "default" ? STYLE_CONFIG[data.style] : null;
+      const loaded: { logo?: HTMLImageElement; photo?: HTMLImageElement; bg?: HTMLImageElement } = {};
+      let remaining = 1; // logo always needed
+      if (styleConfig) remaining++;
+      if (data.photoDataUrl) remaining++;
+
+      const tryDraw = () => {
+        remaining--;
+        if (remaining === 0) {
+          drawBadge(ctx, data, loaded.photo ?? null, loaded.logo!, loaded.bg ?? null);
         }
       };
+
+      const logoImg = new Image();
+      logoImg.onload = () => { loaded.logo = logoImg; tryDraw(); };
       logoImg.src = HNG_LOGO_SVG;
+
+      if (styleConfig) {
+        const bgImg = new Image();
+        bgImg.onload = () => { loaded.bg = bgImg; tryDraw(); };
+        bgImg.src = styleConfig.src;
+      }
+
+      if (data.photoDataUrl) {
+        const photoImg = new Image();
+        photoImg.onload = () => { loaded.photo = photoImg; tryDraw(); };
+        photoImg.src = data.photoDataUrl;
+      }
     }, [data]);
 
     return (
