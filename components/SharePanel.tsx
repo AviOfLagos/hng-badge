@@ -9,25 +9,25 @@ import type { BadgeCanvasRef } from "./BadgeCanvas";
 const CAPTIONS: Record<string, Record<BadgeRole, string>> = {
   x: {
     intern:
-      "🚀 Just started my tech journey at @HNGInternship!\n\nBuilding real products, shipping real code, levelling up with the best. Let's go!\n\n#HNGInternship #TechCareer #DevLife",
+      "🚀 Just started my tech journey at @hnginternship @avioflagos!\n\nBuilding real products, shipping real code, levelling up with the best. Let's go!\n\n#HNGInternship #TechCareer #DevLife",
     mentor:
-      "Honoured to be mentoring the next wave of African tech talent at @HNGInternship 🎯\n\nIf you're serious about tech, this is where you level up. hng.tech\n\n#HNGInternship #TechMentor",
+      "Honoured to be mentoring the next wave of African tech talent at @hnginternship @avioflagos 🎯\n\nIf you're serious about tech, this is where you level up. hng.tech\n\n#HNGInternship #TechMentor",
   },
   whatsapp: {
     intern:
-      "Hey! 🙌 I just joined HNG Internship — one of Africa's biggest tech programs!\n\nSuper excited to build real products and level up my skills 💪\n\nCheck it out 👉 hng.tech",
+      "Hey! 🙌 I just joined HNG Internship — one of Africa's biggest tech programs!\n\nSuper excited to build real products and level up my skills 💪\n\nCheck it out 👉 hng.tech\n\n@hnginternship @avioflagos",
     mentor:
-      "Excited to share that I'm mentoring at HNG Internship! 🎯\n\nHelping the next wave of African tech talent grow. It's going to be great!\n\n👉 hng.tech",
+      "Excited to share that I'm mentoring at HNG Internship! 🎯\n\nHelping the next wave of African tech talent grow. It's going to be great!\n\n👉 hng.tech\n\n@hnginternship @avioflagos",
   },
   instagram: {
     intern:
-      "New chapter unlocked 🔓🚀\n\nSo excited to announce I'm officially interning at HNG — one of Africa's most competitive tech internship programs!\n\nBuilding real products. Growing every day. 💻✨\n\n#HNGInternship #TechInternship #AfricaTech #DevLife #SoftwareDeveloper #Coding #TechCommunity #Innovation",
+      "New chapter unlocked 🔓🚀\n\nSo excited to announce I'm officially interning at @hnginternship — one of Africa's most competitive tech internship programs!\n\nBuilding real products. Growing every day. 💻✨\n\ncc @avioflagos\n\n#HNGInternship #TechInternship #AfricaTech #DevLife #SoftwareDeveloper #Coding #TechCommunity #Innovation",
     mentor:
-      "Giving back to the community I love 🤝✨\n\nProud to be mentoring the next generation of tech talent at HNG Internship — one of Africa's most respected tech programs!\n\n#HNGInternship #TechMentor #AfricaTech #GivingBack #TechCommunity #Leadership",
+      "Giving back to the community I love 🤝✨\n\nProud to be mentoring the next generation of tech talent at @hnginternship — one of Africa's most respected tech programs!\n\ncc @avioflagos\n\n#HNGInternship #TechMentor #AfricaTech #GivingBack #TechCommunity #Leadership",
   },
   snapchat: {
-    intern: "Just joined HNG Internship! 🔥 Come check it out 👉 hng.tech",
-    mentor: "Mentoring the next gen of tech talent at HNG! 🎯 hng.tech",
+    intern: "Just joined HNG Internship! 🔥 @hnginternship @avioflagos 👉 hng.tech",
+    mentor: "Mentoring the next gen of tech talent at HNG! 🎯 @hnginternship @avioflagos hng.tech",
   },
 };
 

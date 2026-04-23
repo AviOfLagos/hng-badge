@@ -7,6 +7,8 @@ import {
   drawRoundedRect, drawCornerBrackets, drawBackground, wrapText, loadImage,
 } from "@/lib/badge-helpers";
 
+export const CURRENT_STAGE = 2;
+
 export interface ProgressBadgeData {
   updateText: string;
   dayNumber: number;
@@ -63,13 +65,15 @@ export function drawProgressBadge(
     ctx.drawImage(logoImg, 80, 72, logoW, logoH);
     ctx.restore();
 
-    // DAY pill (right)
+    // DAY + STAGE pill (right)
     const dayText = `DAY ${data.dayNumber}`;
-    ctx.font = `700 ${S * 0.026}px Arial, sans-serif`;
-    const dayW = ctx.measureText(dayText).width + 40;
-    const dayH = 48;
+    const stageText = `STAGE ${CURRENT_STAGE}`;
+    ctx.font = `700 ${S * 0.022}px Arial, sans-serif`;
+    const pillText = `${dayText}  ·  ${stageText}`;
+    const dayW = ctx.measureText(pillText).width + 44;
+    const dayH = 44;
     const dayX = S - 80 - dayW;
-    const dayY = 66;
+    const dayY = 68;
     drawRoundedRect(ctx, dayX, dayY, dayW, dayH, dayH / 2);
     ctx.fillStyle = lightMode ? "rgba(0,80,140,0.15)" : "rgba(0,174,255,0.15)";
     ctx.fill();
@@ -79,7 +83,7 @@ export function drawProgressBadge(
     ctx.stroke();
     ctx.fillStyle = "#00AEFF";
     ctx.textAlign = "center";
-    ctx.fillText(dayText, dayX + dayW / 2, dayY + dayH * 0.68);
+    ctx.fillText(pillText, dayX + dayW / 2, dayY + dayH * 0.66);
     ctx.textAlign = "left";
     ctx.globalAlpha = 1;
   }
@@ -106,7 +110,16 @@ export function drawProgressBadge(
   if (textProgress > 0) {
     const updateDisplay = data.updateText.trim() || "What are you working on?";
     const maxW = S - 160;
-    const heroY = sepY + 60;
+
+    // "What I'm working on" label
+    ctx.font = `500 ${S * 0.020}px Arial, sans-serif`;
+    ctx.fillStyle = lightMode ? "rgba(0,80,140,0.6)" : "rgba(0,174,255,0.5)";
+    ctx.textAlign = "left";
+    ctx.letterSpacing = "2px";
+    ctx.fillText("WHAT I'M WORKING ON", 80, sepY + 44);
+    ctx.letterSpacing = "0px";
+
+    const heroY = sepY + 76;
 
     // Progressive font sizing
     let fontSize = S * 0.055;

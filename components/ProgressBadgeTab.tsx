@@ -21,17 +21,19 @@ function getDayNumber() {
   return Math.max(0, Math.floor((Date.now() - HNG_START) / 86400000));
 }
 
-type GifStatus = "idle" | "encoding" | "error";
+type GifStatus = "idle" | "generating" | "ready" | "downloading" | "error";
 
 export default function ProgressBadgeTab() {
   const [updateText, setUpdateText] = useState("");
   const [exportMode, setExportMode] = useState<"picture" | "gif">("picture");
   const [gifStatus, setGifStatus] = useState<GifStatus>("idle");
+  const [gifPreviewUrl, setGifPreviewUrl] = useState<string | null>(null);
   const [style, setStyle] = useState<BadgeStyle>("default");
   const [overlayEnabled, setOverlayEnabled] = useState(true);
 
   const profile = typeof window !== "undefined" ? loadProfile() : null;
   const canvasRef = useRef<BadgeCanvasRef>(null);
+  const gifBlobRef = useRef<Blob | null>(null);
 
   // Load saved style preference from profile
   useEffect(() => {
@@ -41,6 +43,24 @@ export default function ProgressBadgeTab() {
       setOverlayEnabled(p.overlayEnabled);
     }
   }, []);
+
+  // Clean up GIF preview URL on unmount or when regenerating
+  useEffect(() => {
+    return () => {
+      if (gifPreviewUrl) URL.revokeObjectURL(gifPreviewUrl);
+    };
+  }, [gifPreviewUrl]);
+
+  // Reset GIF preview when inputs change
+  useEffect(() => {
+    if (gifPreviewUrl) {
+      URL.revokeObjectURL(gifPreviewUrl);
+      setGifPreviewUrl(null);
+      setGifStatus("idle");
+      gifBlobRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateText, style, overlayEnabled]);
 
   const dayNumber = getDayNumber();
 
@@ -55,6 +75,68 @@ export default function ProgressBadgeTab() {
     overlayEnabled,
   };
 
+  // Generate GIF for preview
+  const handleGenerateGif = useCallback(async () => {
+    setGifStatus("generating");
+    try {
+      const logoImg = await loadImage(HNG_LOGO_SVG);
+      const styleConfig = style !== "default" ? STYLE_CONFIG[style] : null;
+      const bgImg = styleConfig ? await loadImage(styleConfig.src) : null;
+      const photoImg = badgeData.photoDataUrl
+        ? await loadImage(badgeData.photoDataUrl)
+        : null;
+
+      const dataSnapshot = { ...badgeData };
+
+      // Calculate frame count based on text length for readable pacing
+      // Base: 30 frames for intro (bg + logo + label), then ~2 frames per character for typing,
+      // then 15 frames for byline, then hold frames so viewer can read the full text
+      const textLen = Math.max(1, dataSnapshot.updateText.trim().length);
+      const introFrames = 20;                         // bg + logo + "what I'm working on"
+      const typingFrames = Math.max(20, textLen * 2); // ~2 frames per char
+      const bylineFrames = 12;                        // slide up
+      const holdFrames = Math.max(30, textLen);       // hold so people can read — longer text = longer hold
+      const totalFrames = introFrames + typingFrames + bylineFrames + holdFrames;
+
+      const gifBlob = await encodeGif({
+        width: 540,
+        height: 540,
+        fps: 15,
+        totalFrames,
+        drawFrame: (ctx, progress) => {
+          // Remap progress to give more time to typing and hold phases
+          const animEnd = 1 - (holdFrames / totalFrames); // where animation ends and hold begins
+          const mappedProgress = progress <= animEnd
+            ? progress / animEnd // 0→1 over the animation portion
+            : 1;                 // hold at 1 for remaining frames
+          drawProgressBadge(ctx, dataSnapshot, photoImg, logoImg, bgImg, mappedProgress);
+        },
+      });
+
+      gifBlobRef.current = gifBlob;
+      const url = URL.createObjectURL(gifBlob);
+      setGifPreviewUrl(url);
+      setGifStatus("ready");
+    } catch (err) {
+      console.error("GIF generation failed:", err);
+      setGifStatus("error");
+      setTimeout(() => setGifStatus("idle"), 3000);
+    }
+  }, [badgeData, style]);
+
+  // Download the already-generated GIF
+  const handleDownloadGif = useCallback(() => {
+    if (!gifBlobRef.current) return;
+    setGifStatus("downloading");
+    const url = URL.createObjectURL(gifBlobRef.current);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hng-progress-day${dayNumber}.gif`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setTimeout(() => setGifStatus("ready"), 1000);
+  }, [dayNumber]);
+
   const handleDownloadPng = useCallback(() => {
     const dataUrl = canvasRef.current?.toDataURL();
     if (!dataUrl) return;
@@ -64,42 +146,28 @@ export default function ProgressBadgeTab() {
     a.click();
   }, [dayNumber]);
 
-  const handleDownloadGif = useCallback(async () => {
-    setGifStatus("encoding");
-    try {
-      // Pre-load images
-      const logoImg = await loadImage(HNG_LOGO_SVG);
-      const styleConfig = style !== "default" ? STYLE_CONFIG[style] : null;
-      const bgImg = styleConfig ? await loadImage(styleConfig.src) : null;
-      const photoImg = badgeData.photoDataUrl
-        ? await loadImage(badgeData.photoDataUrl)
-        : null;
-
-      const gifBlob = await encodeGif({
-        width: 540,
-        height: 540,
-        fps: 15,
-        totalFrames: 45,
-        drawFrame: (ctx, progress) => {
-          drawProgressBadge(ctx, badgeData, photoImg, logoImg, bgImg, progress);
-        },
-      });
-
-      const url = URL.createObjectURL(gifBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `hng-progress-day${dayNumber}.gif`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setGifStatus("idle");
-    } catch (err) {
-      console.error("GIF encoding failed:", err);
-      setGifStatus("error");
-      setTimeout(() => setGifStatus("idle"), 3000);
+  const handleDownload = useCallback(() => {
+    if (exportMode === "gif") {
+      if (gifStatus === "ready") {
+        handleDownloadGif();
+      } else {
+        handleGenerateGif();
+      }
+    } else {
+      handleDownloadPng();
     }
-  }, [badgeData, dayNumber, style]);
+  }, [exportMode, gifStatus, handleDownloadGif, handleGenerateGif, handleDownloadPng]);
 
-  const handleDownload = exportMode === "gif" ? handleDownloadGif : handleDownloadPng;
+  const downloadLabel = (() => {
+    if (exportMode === "picture") return "Download Badge";
+    switch (gifStatus) {
+      case "generating": return "Creating GIF...";
+      case "ready": return "Download GIF";
+      case "downloading": return "Downloading...";
+      case "error": return "Failed — try again";
+      default: return "Download GIF";
+    }
+  })();
 
   if (!profile) {
     return (
@@ -182,16 +250,10 @@ export default function ProgressBadgeTab() {
           <button
             type="button"
             onClick={handleDownload}
-            disabled={gifStatus === "encoding"}
+            disabled={gifStatus === "generating" || gifStatus === "downloading"}
             className="w-full py-3 rounded-xl bg-[#00AEFF] hover:bg-[#00c8ff] active:bg-[#0090dd] text-white font-semibold text-sm transition-colors disabled:opacity-60"
           >
-            {exportMode === "gif"
-              ? gifStatus === "encoding"
-                ? "Creating GIF..."
-                : gifStatus === "error"
-                  ? "Failed — try again"
-                  : "Download GIF"
-              : "Download Badge"}
+            {downloadLabel}
           </button>
         </div>
 
@@ -203,9 +265,47 @@ export default function ProgressBadgeTab() {
 
       {/* Preview */}
       <div className="flex-1 flex flex-col items-center">
-        <div className="w-full max-w-sm lg:max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl shadow-orange-900/20 border border-gray-800">
+        <div className="relative w-full max-w-sm lg:max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl shadow-orange-900/20 border border-gray-800">
+          {/* Static canvas preview (always rendered underneath) */}
           <ProgressBadgeCanvas ref={canvasRef} data={badgeData} />
+
+          {/* GIF preview overlay — shows the animated GIF once generated */}
+          {gifPreviewUrl && exportMode === "gif" && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={gifPreviewUrl}
+              alt="Animated badge preview"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
+
+          {/* Play button — click to generate & preview GIF */}
+          {exportMode === "gif" && !gifPreviewUrl && (
+            <button
+              type="button"
+              onClick={handleGenerateGif}
+              disabled={gifStatus === "generating"}
+              className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors cursor-pointer"
+            >
+              {gifStatus === "generating" ? (
+                <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/60 transition-colors">
+                  <svg viewBox="0 0 24 24" fill="white" className="w-7 h-7 ml-1">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              )}
+            </button>
+          )}
         </div>
+
+        {/* GIF preview hint */}
+        {exportMode === "gif" && !gifPreviewUrl && gifStatus !== "generating" && (
+          <p className="text-[#00AEFF] text-xs mt-2">Click play to preview the animation</p>
+        )}
 
         {/* Background selector */}
         <div className="flex gap-2 flex-wrap justify-center mt-4">
