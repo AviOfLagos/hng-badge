@@ -231,19 +231,19 @@ export default function ProgressBadgeTab() {
           <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
             Text Color
           </label>
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="grid grid-cols-8 gap-1.5">
             {TEXT_COLORS.map((c) => (
               <button
                 type="button"
                 key={c.id}
                 onClick={() => setTextColor(c.id)}
                 title={c.label}
-                className={`w-7 h-7 rounded-lg border-2 transition-all ${
+                className={`w-full aspect-square rounded-lg border-2 transition-all ${
                   textColor === c.id
                     ? "border-[#00AEFF] ring-1 ring-[#00AEFF]/50"
                     : "border-gray-600 hover:border-gray-400"
                 }`}
-                style={{ backgroundColor: overlayEnabled ? c.value : c.dark }}
+                style={{ backgroundColor: c.value }}
               />
             ))}
           </div>

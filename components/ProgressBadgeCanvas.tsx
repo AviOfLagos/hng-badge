@@ -10,16 +10,24 @@ import {
 export const CURRENT_STAGE = 2;
 
 export const TEXT_COLORS = [
-  { id: "white", value: "#FFFFFF", dark: "#1a1a2e", label: "White / Dark" },
-  { id: "cyan", value: "#00EAFF", dark: "#005570", label: "Cyan" },
-  { id: "mint", value: "#5FFFB0", dark: "#1a6b42", label: "Mint" },
-  { id: "gold", value: "#FFD966", dark: "#7a5c00", label: "Gold" },
-  { id: "coral", value: "#FF6B6B", dark: "#8b2020", label: "Coral" },
-  { id: "lavender", value: "#C4B5FD", dark: "#4a3080", label: "Lavender" },
-  { id: "lime", value: "#BFFF00", dark: "#4a6600", label: "Lime" },
-  { id: "peach", value: "#FFAB91", dark: "#7a3d20", label: "Peach" },
-  { id: "hotpink", value: "#FF69B4", dark: "#8b1a5a", label: "Hot Pink" },
-  { id: "ice", value: "#A5F3FC", dark: "#1a5060", label: "Ice" },
+  // Row 1
+  { id: "white", value: "#FFFFFF", label: "White" },
+  { id: "darktext", value: "#1a1a2e", label: "Dark" },
+  { id: "cyan", value: "#00EAFF", label: "Cyan" },
+  { id: "mint", value: "#5FFFB0", label: "Mint" },
+  { id: "gold", value: "#FFD966", label: "Gold" },
+  { id: "coral", value: "#FF6B6B", label: "Coral" },
+  { id: "lavender", value: "#C4B5FD", label: "Lavender" },
+  { id: "lime", value: "#BFFF00", label: "Lime" },
+  // Row 2
+  { id: "peach", value: "#FFAB91", label: "Peach" },
+  { id: "hotpink", value: "#FF69B4", label: "Hot Pink" },
+  { id: "ice", value: "#A5F3FC", label: "Ice" },
+  { id: "amber", value: "#FBBF24", label: "Amber" },
+  { id: "rose", value: "#FB7185", label: "Rose" },
+  { id: "violet", value: "#A78BFA", label: "Violet" },
+  { id: "teal", value: "#2DD4BF", label: "Teal" },
+  { id: "orange", value: "#FB923C", label: "Orange" },
 ] as const;
 
 export type TextColorId = (typeof TEXT_COLORS)[number]["id"];
@@ -169,12 +177,9 @@ export function drawProgressBadge(
     ctx.font = `bold ${fontSize}px Arial, sans-serif`;
     const visibleLines = wrapText(ctx, visibleText, maxW);
 
-    // Text color from palette — use dark variant when overlay is off
+    // Text color from palette — same color regardless of overlay state
     const colorEntry = TEXT_COLORS.find((c) => c.id === data.textColor);
-    const resolvedColor = lightMode
-      ? (colorEntry?.dark ?? "#1a1a2e")
-      : (colorEntry?.value ?? "#FFFFFF");
-    ctx.fillStyle = resolvedColor;
+    ctx.fillStyle = colorEntry?.value ?? "#FFFFFF";
     ctx.textAlign = "left";
     visibleLines.forEach((line, i) => {
       ctx.fillText(line, pad, heroStartY + i * lineH);
