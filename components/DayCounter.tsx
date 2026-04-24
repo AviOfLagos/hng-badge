@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { getCurrentStage } from "@/components/ProgressBadgeCanvas";
 
 const HNG_START = new Date("2026-04-10T00:00:00").getTime();
-const CURRENT_STAGE = 2;
 
 function getDays() {
   return Math.max(0, Math.floor((Date.now() - HNG_START) / 86400000));
@@ -58,7 +58,7 @@ export default function DayCounter() {
         <div className="flex items-start pt-2.5">
           <span className="text-gray-600 text-xl font-light">/</span>
         </div>
-        <FlipCard value={`Stage ${CURRENT_STAGE}`} label="Current Stage" />
+        <FlipCard value={getCurrentStage().label} label="Current Stage" />
       </div>
     </div>
   );

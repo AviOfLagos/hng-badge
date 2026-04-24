@@ -7,7 +7,44 @@ import {
   drawRoundedRect, drawCornerBrackets, drawBackground, wrapText, loadImage,
 } from "@/lib/badge-helpers";
 
-export const CURRENT_STAGE = 2;
+// HNG stage schedule — auto-determines current stage from date
+const STAGE_SCHEDULE = [
+  { stage: 0, start: "2026-04-10", end: "2026-04-16" },
+  { stage: 1, start: "2026-04-14", end: "2026-04-18" },
+  { stage: 2, start: "2026-04-20", end: "2026-04-23" },
+  { stage: 3, start: "2026-04-25", end: "2026-04-29" },
+  { stage: 4, start: "2026-05-01", end: "2026-05-06" },
+  { stage: 5, start: "2026-05-08", end: "2026-05-13" },
+  { stage: 6, start: "2026-05-15", end: "2026-05-20" },
+  { stage: 7, start: "2026-05-22", end: "2026-05-27" },
+  { stage: "break", start: "2026-05-25", end: "2026-05-27", label: "Mentor's Break" },
+  { stage: 8, start: "2026-05-29", end: "2026-06-02" },
+  { stage: 9, start: "2026-06-03", end: "2026-06-06" },
+] as const;
+
+export function getCurrentStage(): { label: string; num: number | null } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Walk backwards to find the latest stage whose start date has passed
+  for (let i = STAGE_SCHEDULE.length - 1; i >= 0; i--) {
+    const s = STAGE_SCHEDULE[i];
+    const start = new Date(s.start + "T00:00:00");
+    const end = new Date(s.end + "T23:59:59");
+    if (today >= start && today <= end) {
+      if (s.stage === "break") return { label: "Mentor's Break", num: null };
+      return { label: `Stage ${s.stage}`, num: s.stage };
+    }
+  }
+  // Between stages — find the next upcoming stage
+  for (const s of STAGE_SCHEDULE) {
+    const start = new Date(s.start + "T00:00:00");
+    if (today < start) {
+      if (s.stage === "break") return { label: "Mentor's Break", num: null };
+      return { label: `Stage ${s.stage}`, num: s.stage };
+    }
+  }
+  return { label: "Stage 9", num: 9 };
+}
 
 export const TEXT_COLORS = [
   // Row 1
@@ -92,9 +129,9 @@ export function drawProgressBadge(
 
     // DAY + STAGE pill (right)
     const dayText = `DAY ${data.dayNumber}`;
-    const stageText = `STAGE ${CURRENT_STAGE}`;
+    const stageInfo = getCurrentStage();
     ctx.font = `700 ${S * 0.022}px Arial, sans-serif`;
-    const pillText = `${dayText}  ·  ${stageText}`;
+    const pillText = `${dayText}  ·  ${stageInfo.label.toUpperCase()}`;
     const dayW = ctx.measureText(pillText).width + 44;
     const dayH = 44;
     const dayX = S - 80 - dayW;
