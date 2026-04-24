@@ -318,6 +318,9 @@ export default function SharePanel({ role, badgeName, canvasRef }: SharePanelPro
                 <p className="text-gray-400 text-xs leading-relaxed">
                   Press <kbd className="bg-gray-800 text-white px-1.5 py-0.5 rounded text-[11px] font-mono font-bold border border-gray-700">Ctrl+V</kbd> (or <kbd className="bg-gray-800 text-white px-1.5 py-0.5 rounded text-[11px] font-mono font-bold border border-gray-700">⌘V</kbd>) to paste your badge into a tweet, post, or anywhere you want.
                 </p>
+                <p className="text-[#00AEFF] text-xs mt-2 font-medium">
+                  🔄 Tag <span className="font-bold">@hnginternship</span> &amp; <span className="font-bold">@avioflagos</span> and we&apos;ll retweet you!
+                </p>
               </div>
             </div>
           </div>
