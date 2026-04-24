@@ -11,15 +11,15 @@ export const CURRENT_STAGE = 2;
 
 export const TEXT_COLORS = [
   { id: "white", value: "#FFFFFF", label: "White" },
-  { id: "cyan", value: "#00AEFF", label: "Cyan" },
-  { id: "lime", value: "#84CC16", label: "Lime" },
-  { id: "amber", value: "#F59E0B", label: "Amber" },
-  { id: "rose", value: "#F43F5E", label: "Rose" },
-  { id: "violet", value: "#8B5CF6", label: "Violet" },
-  { id: "emerald", value: "#10B981", label: "Emerald" },
-  { id: "orange", value: "#F97316", label: "Orange" },
-  { id: "pink", value: "#EC4899", label: "Pink" },
-  { id: "sky", value: "#38BDF8", label: "Sky" },
+  { id: "cyan", value: "#00EAFF", label: "Cyan" },
+  { id: "mint", value: "#5FFFB0", label: "Mint" },
+  { id: "gold", value: "#FFD966", label: "Gold" },
+  { id: "coral", value: "#FF6B6B", label: "Coral" },
+  { id: "lavender", value: "#C4B5FD", label: "Lavender" },
+  { id: "lime", value: "#BFFF00", label: "Lime" },
+  { id: "peach", value: "#FFAB91", label: "Peach" },
+  { id: "hotpink", value: "#FF69B4", label: "Hot Pink" },
+  { id: "ice", value: "#A5F3FC", label: "Ice" },
 ] as const;
 
 export type TextColorId = (typeof TEXT_COLORS)[number]["id"];
@@ -127,28 +127,40 @@ export function drawProgressBadge(
   if (textProgress > 0) {
     const updateDisplay = data.updateText.trim() || "What are you working on?";
     const maxW = S - 160;
+    const pad = 80;
+
+    // Available vertical zone: between top bar area and byline
+    const zoneTop = sepY + 20;
+    const zoneBottom = S - 200; // above byline
+    const zoneH = zoneBottom - zoneTop;
+
+    // Font size from slider: 0→100 maps to fixed pixel sizes 32→72
+    const fontSize = Math.round(32 + (data.textSize / 100) * 40);
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+    const lines = wrapText(ctx, updateDisplay, maxW);
+    const lineH = fontSize * 1.35;
+
+    // Label height
+    const labelFontSize = S * 0.020;
+    const labelH = labelFontSize + 16; // label + gap
+
+    // Total content height: label + text block
+    const textBlockH = lines.length * lineH;
+    const totalContentH = labelH + textBlockH;
+
+    // Center the entire content block vertically in the zone
+    const contentTop = zoneTop + (zoneH - totalContentH) / 2;
 
     // "What I'm working on" label
-    ctx.font = `500 ${S * 0.020}px Arial, sans-serif`;
+    ctx.font = `500 ${labelFontSize}px Arial, sans-serif`;
     ctx.fillStyle = lightMode ? "rgba(0,80,140,0.6)" : "rgba(0,174,255,0.5)";
     ctx.textAlign = "left";
     ctx.letterSpacing = "2px";
-    ctx.fillText("WHAT I'M WORKING ON", 80, sepY + 44);
+    ctx.fillText("WHAT I'M WORKING ON", pad, contentTop + labelFontSize);
     ctx.letterSpacing = "0px";
 
-    const heroY = sepY + 76;
-
-    // Font size: slider 0–100 maps to 0.035–0.075 of S
-    const sizeMultiplier = 0.035 + (data.textSize / 100) * 0.040;
-    let fontSize = S * sizeMultiplier;
-    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-    let lines = wrapText(ctx, updateDisplay, maxW);
-    // Auto-shrink if too many lines even at chosen size
-    while (lines.length > 7 && fontSize > S * 0.028) {
-      fontSize -= 2;
-      ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-      lines = wrapText(ctx, updateDisplay, maxW);
-    }
+    // Hero text — vertically centered, left aligned
+    const heroStartY = contentTop + labelH + fontSize * 0.85; // baseline of first line
 
     // For animation: show partial characters
     const totalChars = updateDisplay.length;
@@ -162,9 +174,8 @@ export function drawProgressBadge(
     const resolvedColor = colorEntry?.value ?? "#FFFFFF";
     ctx.fillStyle = lightMode ? "#1a1a2e" : resolvedColor;
     ctx.textAlign = "left";
-    const lineH = fontSize * 1.35;
     visibleLines.forEach((line, i) => {
-      ctx.fillText(line, 80, heroY + i * lineH);
+      ctx.fillText(line, pad, heroStartY + i * lineH);
     });
   }
 

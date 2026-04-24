@@ -31,7 +31,7 @@ export default function ProgressBadgeTab() {
   const [style, setStyle] = useState<BadgeStyle>("default");
   const [overlayEnabled, setOverlayEnabled] = useState(true);
   const [textColor, setTextColor] = useState<TextColorId>("white");
-  const [textSize, setTextSize] = useState(60); // 0–100
+  const [textSize, setTextSize] = useState(50); // 0–100 → maps to 32px–72px
 
   const profile = typeof window !== "undefined" ? loadProfile() : null;
   const canvasRef = useRef<BadgeCanvasRef>(null);
