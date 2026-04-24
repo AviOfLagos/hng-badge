@@ -66,7 +66,7 @@ const PLATFORMS: Platform[] = [
     icon: <XIcon />,
     hero: true,
     getUrl: (caption) =>
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(caption)}`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(caption)}&url=${encodeURIComponent("https://x.com/AviOfLagos/status/2047572738009632940")}`,
   },
   {
     id: "instagram",
