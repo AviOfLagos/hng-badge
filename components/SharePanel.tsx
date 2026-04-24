@@ -99,6 +99,7 @@ type ShareStatus = "idle" | "loading" | "done" | "error";
 export default function SharePanel({ role, badgeName, canvasRef }: SharePanelProps) {
   const [badgeSaved, setBadgeSaved] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
+  const [showPasteHint, setShowPasteHint] = useState(false);
   const [statuses, setStatuses] = useState<Record<string, ShareStatus>>({});
 
   const fileName = `hng-badge-${badgeName || "badge"}.png`;
@@ -125,6 +126,7 @@ export default function SharePanel({ role, badgeName, canvasRef }: SharePanelPro
       ]);
       setCopyDone(true);
       setBadgeSaved(true);
+      setShowPasteHint(true);
       setTimeout(() => setCopyDone(false), 4000);
     } catch {
       downloadBadge(dataUrl, fileName);
@@ -149,6 +151,7 @@ export default function SharePanel({ role, badgeName, canvasRef }: SharePanelPro
           await navigator.clipboard.write([
             new ClipboardItem({ "image/png": blob }),
           ]);
+          setShowPasteHint(true);
         } catch { /* clipboard may not be available */ }
 
         // Mobile: native share sheet
@@ -225,14 +228,9 @@ export default function SharePanel({ role, badgeName, canvasRef }: SharePanelPro
             {copyDone ? "Copied!" : "Copy Image"}
           </button>
         </div>
-        {copyDone && (
+        {badgeSaved && (
           <p className="text-[11px] text-green-400 mt-1.5">
-            ✓ Badge copied to clipboard — press <span className="font-mono font-bold">Ctrl+V</span> (or <span className="font-mono font-bold">⌘V</span>) to paste it anywhere!
-          </p>
-        )}
-        {badgeSaved && !copyDone && (
-          <p className="text-[11px] text-green-400 mt-1.5">
-            Badge saved — now share it below!
+            {copyDone ? "✓ Copied to clipboard!" : "Badge saved — now share it below!"}
           </p>
         )}
       </div>
@@ -298,6 +296,33 @@ export default function SharePanel({ role, badgeName, canvasRef }: SharePanelPro
           </p>
         </div>
       </div>
+
+      {/* ── Floating paste hint card ── */}
+      {showPasteHint && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4">
+          <div className="bg-gray-900 border border-[#00AEFF]/30 rounded-2xl px-5 py-4 shadow-2xl shadow-black/50 max-w-sm w-[90vw] relative">
+            <button
+              type="button"
+              onClick={() => setShowPasteHint(false)}
+              className="absolute top-2.5 right-2.5 text-gray-500 hover:text-white transition-colors p-1"
+              aria-label="Close"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <div className="flex items-start gap-3">
+              <div className="text-2xl shrink-0">📋</div>
+              <div>
+                <p className="text-white text-sm font-semibold mb-1">Badge copied to clipboard!</p>
+                <p className="text-gray-400 text-xs leading-relaxed">
+                  Press <kbd className="bg-gray-800 text-white px-1.5 py-0.5 rounded text-[11px] font-mono font-bold border border-gray-700">Ctrl+V</kbd> (or <kbd className="bg-gray-800 text-white px-1.5 py-0.5 rounded text-[11px] font-mono font-bold border border-gray-700">⌘V</kbd>) to paste your badge into a tweet, post, or anywhere you want.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
