@@ -103,8 +103,8 @@ export default function ProgressBadgeTab() {
       const totalFrames = introFrames + typingFrames + bylineFrames + holdFrames;
 
       const gifBlob = await encodeGif({
-        width: 540,
-        height: 540,
+        width: 360,
+        height: 360,
         fps: 15,
         totalFrames,
         drawFrame: (ctx, progress) => {

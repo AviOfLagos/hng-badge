@@ -1,4 +1,4 @@
-import { Encoder } from "modern-gif";
+import { encode } from "modern-gif";
 
 interface GifOptions {
   width: number;
@@ -16,21 +16,27 @@ export async function encodeGif(options: GifOptions): Promise<Blob> {
   const ctx = canvas.getContext("2d")!;
   const delay = Math.round(1000 / fps);
 
-  const encoder = new Encoder({
-    width,
-    height,
-    maxColors: 256,
-  });
+  // Collect all frames as raw pixel ArrayBuffers
+  const frames: Array<{ pixels: ArrayBuffer; delay: number }> = [];
 
   for (let i = 0; i < totalFrames; i++) {
     const progress = totalFrames === 1 ? 1 : i / (totalFrames - 1);
     ctx.clearRect(0, 0, width, height);
     drawFrame(ctx, progress);
-    await encoder.encode({
-      data: canvas,
-      delay,
-    });
+    const imageData = ctx.getImageData(0, 0, width, height);
+    // .slice() creates a proper ArrayBuffer (not SharedArrayBuffer)
+    frames.push({ pixels: imageData.data.buffer.slice(0), delay });
   }
 
-  return encoder.flush("blob");
+  const blob = await encode({
+    width,
+    height,
+    frames: frames.map((f) => ({
+      data: f.pixels,
+      delay: f.delay,
+    })),
+    format: "blob",
+  });
+
+  return blob;
 }
