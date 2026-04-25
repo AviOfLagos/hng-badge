@@ -11,6 +11,7 @@ const BadgeCanvas = dynamic(() => import("@/components/BadgeCanvas"), { ssr: fal
 const DayCounter = dynamic(() => import("@/components/DayCounter"), { ssr: false });
 
 const HNG_TRACKS = [
+  "Data Analytics",
   "Frontend",
   "Backend",
   "Mobile",
