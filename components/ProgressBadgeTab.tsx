@@ -7,7 +7,7 @@ import type { ProgressBadgeData, TextColorId } from "@/components/ProgressBadgeC
 import { drawProgressBadge, TEXT_COLORS } from "@/components/ProgressBadgeCanvas";
 import { loadProfile } from "@/lib/storage";
 import { STYLE_CONFIG, HNG_LOGO_SVG, loadImage } from "@/lib/badge-helpers";
-import { encodeGif } from "@/lib/gif-encoder";
+import { encodeGif, type GifFrame } from "@/lib/gif-encoder";
 import SharePanel from "@/components/SharePanel";
 
 const ProgressBadgeCanvas = dynamic(
@@ -91,29 +91,41 @@ export default function ProgressBadgeTab() {
         : null;
 
       const dataSnapshot = { ...badgeData };
-
-      // Calculate frame count based on text length for readable pacing
-      // Base: 30 frames for intro (bg + logo + label), then ~2 frames per character for typing,
-      // then 15 frames for byline, then hold frames so viewer can read the full text
       const textLen = Math.max(1, dataSnapshot.updateText.trim().length);
-      const introFrames = 20;                         // bg + logo + "what I'm working on"
-      const typingFrames = Math.max(20, textLen * 2); // ~2 frames per char
-      const bylineFrames = 12;                        // slide up
-      const holdFrames = Math.max(30, textLen);       // hold so people can read — longer text = longer hold
-      const totalFrames = introFrames + typingFrames + bylineFrames + holdFrames;
+
+      // Build frames with variable delays:
+      // - Intro (bg + logo + brackets): few frames, fast (40ms each)
+      // - Text typing: one frame per ~3 chars, slower (120ms each)
+      // - Byline slide: few frames, fast (50ms each)
+      // - Hold: single final frame with long delay so readers can read
+      const frames: GifFrame[] = [];
+
+      // Phase 1: Intro — progress 0→0.33 in 6 frames, 40ms each
+      for (let i = 0; i <= 5; i++) {
+        frames.push({ progress: (i / 5) * 0.33, delay: 40 });
+      }
+
+      // Phase 2: Text typing — progress 0.33→0.62, one frame per ~3 chars
+      const typingSteps = Math.max(8, Math.ceil(textLen / 3));
+      for (let i = 1; i <= typingSteps; i++) {
+        frames.push({ progress: 0.33 + (i / typingSteps) * 0.29, delay: 120 });
+      }
+
+      // Phase 3: Byline — progress 0.62→1.0 in 5 frames, 50ms each
+      for (let i = 1; i <= 5; i++) {
+        frames.push({ progress: 0.62 + (i / 5) * 0.38, delay: 50 });
+      }
+
+      // Phase 4: Hold — final frame stays visible for reading
+      const holdMs = Math.max(2000, textLen * 25); // longer text = longer hold
+      frames.push({ progress: 1, delay: holdMs });
 
       const gifBlob = await encodeGif({
         width: 360,
         height: 360,
-        fps: 15,
-        totalFrames,
+        frames,
         drawFrame: (ctx, progress) => {
-          // Remap progress to give more time to typing and hold phases
-          const animEnd = 1 - (holdFrames / totalFrames); // where animation ends and hold begins
-          const mappedProgress = progress <= animEnd
-            ? progress / animEnd // 0→1 over the animation portion
-            : 1;                 // hold at 1 for remaining frames
-          drawProgressBadge(ctx, dataSnapshot, photoImg, logoImg, bgImg, mappedProgress);
+          drawProgressBadge(ctx, dataSnapshot, photoImg, logoImg, bgImg, progress);
         },
       });
 
