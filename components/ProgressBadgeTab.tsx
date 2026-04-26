@@ -121,8 +121,8 @@ export default function ProgressBadgeTab() {
       frames.push({ progress: 1, delay: holdMs });
 
       const gifBlob = await encodeGif({
-        width: 360,
-        height: 360,
+        width: 540,
+        height: 540,
         frames,
         drawFrame: (ctx, progress) => {
           drawProgressBadge(ctx, dataSnapshot, photoImg, logoImg, bgImg, progress);

@@ -37,6 +37,46 @@ export default function Home() {
   const [downloading, setDownloading] = useState(false);
 
   const canvasRef = useRef<BadgeCanvasRef>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hydrate fields from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("hng-badge-profile");
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p.name) setName(p.name);
+        if (p.role) setRole(p.role);
+        if (p.track) {
+          // Check if the saved track matches a known track or is custom
+          const knownTracks = HNG_TRACKS.filter((t) => t !== "Other");
+          if (knownTracks.includes(p.track)) {
+            setTrack(p.track);
+          } else if (p.track) {
+            setTrack("Other");
+            setCustomTrack(p.track);
+          }
+        }
+        if (p.photoDataUrl) setPhotoDataUrl(p.photoDataUrl);
+        if (p.style) setStyle(p.style);
+        if (typeof p.overlayEnabled === "boolean") setOverlayEnabled(p.overlayEnabled);
+      }
+    } catch { /* ignore */ }
+    setHydrated(true);
+  }, []);
+
+  // Only save after hydration to avoid overwriting with empty state
+  useEffect(() => {
+    if (!hydrated) return;
+    saveProfile({
+      name,
+      role,
+      track: track === "Other" ? customTrack : track,
+      photoDataUrl,
+      style,
+      overlayEnabled,
+    });
+  }, [hydrated, name, role, track, customTrack, photoDataUrl, style, overlayEnabled]);
 
   const badgeData: BadgeData = {
     name,
@@ -46,18 +86,6 @@ export default function Home() {
     style,
     overlayEnabled,
   };
-
-  // Save profile to localStorage on every field change
-  useEffect(() => {
-    saveProfile({
-      name,
-      role,
-      track: track === "Other" ? customTrack : track,
-      photoDataUrl,
-      style,
-      overlayEnabled,
-    });
-  }, [name, role, track, customTrack, photoDataUrl, style, overlayEnabled]);
 
   const handlePhoto = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
